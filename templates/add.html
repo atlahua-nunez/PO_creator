@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}Create PO {% endblock %}
+    {% block styles %}
+        {{ bootstrap.load_css() }}
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css')}}">
+    {% endblock %}
+{% block content %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="flashes">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif%}
+    {% endwith %}
+    <form method='POST' action="{{ url_for('add') }}" id="poForm">
+        {{ form.hidden_tag() }}
+
+        <!-- PO Number Display -->
+        <div class="mb-3">
+            <strong>PO Number:</strong>
+            {% if po_number %}
+                <span class="badge bg-success fs-6">{{ po_number }}</span> <small class="text-success">✓ Created Successfully!</small>
+            {% else %}
+                <em class="text-muted">Will be generated when PO is created</em>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.supplier.label(class="form-label") }}
+            {{ form.supplier(class="form-control") }}
+            {% if form.supplier.errors %}
+                <div class="text-danger">
+                    {% for error in form.supplier.errors %}
+                        <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.creation_date.label(class="form-label") }}
+            {{ form.creation_date(class="form-control") }}
+        </div>
+
+        <div class="mb-3">
+            {{ form.total_price.label(class="form-label") }}
+            {{ form.total_price(class="form-control grand-total", readonly=true) }}
+            <small class="text-muted">This will be calculated automatically from line totals</small>
+            {% if form.total_price.errors %}
+                <div class="text-danger">
+                    {% for error in form.total_price.errors %}
+                        <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="mb-3">
+            {{ form.status.label(class="form-label") }}
+            {{ form.status(class="form-control") }}
+            {% if form.status.errors %}
+                <div class="text-danger">
+                    {% for error in form.status.errors %}
+                        <small>{{ error }}</small>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <br>
+        <h5>Purchase Order Lines</h5>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Item</th>
+                        <th>Part Number</th>
+                        <th>Description</th>
+                        <th>Qty</th>
+                        <th>Req Date</th>
+                        <th>Unit</th>
+                        <th>Unit Price</th>
+                        <th>Line Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for line in form.lines %}
+                        <tr>
+                            <td class="text-center">{{ line.item.data }}</td>
+                            <td>{{ line.part_number(class="form-control") }}</td>
+                            <td>{{ line.description }}</td>
+                            <td>{{ line.quantity(class="form-control", onchange="calculateLineTotal(" + loop.index0|string + ")") }}</td>
+                            <td>{{ line.req_date(class="form-control") }}</td>
+                            <td>{{ line.unit(class="form-control") }}</td>
+                            <td>{{ line.unit_price(class="form-control", onchange="calculateLineTotal(" + loop.index0|string + ")") }}</td>
+                            <td>{{ line.line_total(class="form-control line-total") }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+ <!-- Conditional buttons based on PO creation state -->
+        <div class="mb-3">
+            {% if po_created %}
+                <!-- After PO is created - show disabled button and new options -->
+                <button type="submit" class="btn btn-secondary" disabled>
+                    <i class="ri-check-line"></i> PO Created
+                </button>
+                <a href="{{ url_for('new_po') }}" class="btn btn-success ms-2">
+                    <i class="ri-add-line"></i> Create New PO
+                </a>
+                <a href="{{ url_for('view_po', po_code=po_number) }}" class="btn btn-primary ms-2">
+                    <i class="ri-eye-line"></i> View PO {{ po_number }}
+                </a>
+            {% else %}
+                <!-- Before PO is created - show active create button -->
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('add') }}" class="btn btn-outline-secondary ms-2">
+                    <i class="ri-refresh-line"></i> Clear Form
+                </a>
+            {% endif %}
+        </div>
+
+        <!-- Success instructions after PO creation -->
+        {% if po_created %}
+            <div class="alert alert-info">
+                <h5><i class="ri-information-line"></i> What's Next?</h5>
+                <ul class="mb-0">
+                    <li><strong>View PO:</strong> Click "View PO" to see the complete purchase order</li>
+                    <li><strong>Create Another:</strong> Click "Create New PO" to start fresh with a new supplier/items</li>
+                </ul>
+            </div>
+        {% endif %}
+
+    </form>
+
+
+
+    <script>
+        function calculateLineTotal(index) {
+            const quantityInput = document.querySelector(`#lines-${index}-quantity`);
+            const unitPriceInput = document.querySelector(`#lines-${index}-unit_price`);
+            const lineTotalInput = document.querySelector(`#lines-${index}-line_total`);
+            const totalPriceInput = document.querySelector(`#total_price`);
+
+            const quantity = parseFloat(quantityInput.value) || 0;
+            const unitPrice = parseFloat(unitPriceInput.value) || 0;
+            const lineTotal = quantity * unitPrice;
+
+            lineTotalInput.value = lineTotal.toFixed(2);
+
+            // Calculate grand total
+            calculateGrandTotal();
+        }
+
+        function calculateGrandTotal() {
+            const lineTotalInputs = document.querySelectorAll('[id$="-line_total"]');
+            let grandTotal = 0;
+
+            lineTotalInputs.forEach(input => {
+                const value = parseFloat(input.value) || 0;
+                grandTotal += value;
+            });
+
+            document.querySelector('#total_price').value = grandTotal.toFixed(2);
+        }
+
+
+    </script>
+    {% endblock %}

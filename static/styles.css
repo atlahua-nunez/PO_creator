@@ -1,0 +1,140 @@
+/* General layout */
+body {
+  background-color: #f8f9fa;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  color: #212529;
+  margin: 0;
+  padding-bottom: 60px; /* espacio para evitar que el footer tape contenido */
+}
+
+/* Navbar */
+.navbar {
+  background-color: #343a40 !important;
+}
+
+.navbar a,
+.navbar-brand {
+  color: #f8f9fa !important;
+}
+
+.navbar a:hover {
+  color: #adb5bd !important;
+}
+
+/* Headings */
+h1, h2, h3, h4 {
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Cards and containers */
+.card {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  border-radius: 0.5rem;
+}
+
+.container {
+  margin-top: 2rem;
+}
+
+/* Buttons */
+.btn-primary {
+  background-color: #0d6efd;
+  border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+  background-color: #0b5ed7;
+  border-color: #0a58ca;
+}
+
+/* Tables */
+.table th {
+  background-color: #e9ecef;
+  font-weight: 600;
+  color: black;
+}
+
+/* Footer */
+footer {
+  background-color: #343a40;
+  color: #f8f9fa;
+  padding: 1rem 0;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  text-align: center;
+}
+
+/* Form fields */
+input, select, textarea {
+  border-radius: 0.3rem !important;
+}
+
+/* Spacing helpers */
+.mt-3 { margin-top: 1rem !important; }
+.mt-4 { margin-top: 1.5rem !important; }
+.mt-5 { margin-top: 3rem !important; }
+
+.mb-3 { margin-bottom: 1rem !important; }
+
+
+/* Flash Message Styling */
+.message {
+  padding: 15px 20px;
+  margin: 10px auto;
+  border-radius: 8px;
+  max-width: 600px;
+  font-weight: bold;
+  color: #fff;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  position: relative;
+  animation: slideDown 0.5s ease-out;
+}
+
+.success {
+  background-color: #28a745;
+}
+
+.danger {
+  background-color: #dc3545;
+}
+
+.warning {
+  background-color: #ffc107;
+  color: #000;
+}
+
+.info {
+  background-color: #17a2b8;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Optional close button */
+.message .close-btn {
+  position: absolute;
+  right: 12px;
+  top: 10px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  color: #fff;
+  cursor: pointer;
+}
+
+.line-total {
+    text-align: right;    /* Números alineados a la derecha */
+    font-weight: bold;    /* Texto en negritas */
+    background: #f8f9fa;  /* Fondo gris claro */
+}
