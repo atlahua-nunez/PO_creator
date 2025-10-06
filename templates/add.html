@@ -93,7 +93,7 @@
                     {% for line in form.lines %}
                         <tr>
                             <td class="text-center">{{ line.item.data }}</td>
-                            <td>{{ line.part_number(class="form-control") }}</td>
+                            <td>{{ line.part_number(class="form-control"), onchange="onePartNumberChange(" + loop.index0|string + ")" }}</td>
                             <td>{{ line.description }}</td>
                             <td>{{ line.quantity(class="form-control", onchange="calculateLineTotal(" + loop.index0|string + ")") }}</td>
                             <td>{{ line.req_date(class="form-control") }}</td>
@@ -171,6 +171,28 @@
             document.querySelector('#total_price').value = grandTotal.toFixed(2);
         }
 
+        function onPartNumberChange(lineIndex) {
+            const partNumber = document.getElementById(`#lines-${lineIndex}-part_number`);
 
+            if (partNumber){
+                fetch(`/lookup_part/${partNumber}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.found){
+                            document.getElementById(`#lines-${lineIndex}-description`).value = data.description;
+                            document.getElementById(`#lines-${lineIndex}-unit_price`).value = data.unit_price;
+                            document.getElementById(`#lines-${lineIndex}-unit`).value = data.unit;
+                            document.getElementById(`#lines-${linIndex}-quantity`).value = data.minimun_qty;
+
+                            document.getElementById('supplier').value = data.supplier;
+
+                            calculateLineTotal(lineIndex);
+                        } else {
+                            alert('Part not found in database!');
+                        }
+                    });
+
+            }
+        }
     </script>
     {% endblock %}
