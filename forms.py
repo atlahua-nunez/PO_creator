@@ -23,5 +23,5 @@ class PurchaseOrderForm(FlaskForm):
     lines = FieldList(FormField(POLineForm), min_entries=5)
     supplier = StringField('Supplier', validators=[DataRequired()])
     total_price = FloatField('Total', validators=[Optional()], render_kw={"readonly": True})
-    status = StringField('Status', validators=[DataRequired()])
+    #status = StringField('Status', validators=[DataRequired()])
     submit = SubmitField('Create PO')

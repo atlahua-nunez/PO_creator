@@ -61,17 +61,18 @@
             {% endif %}
         </div>
 
+
         <div class="mb-3">
-            {{ form.status.label(class="form-label") }}
-            {{ form.status(class="form-control") }}
-            {% if form.status.errors %}
-                <div class="text-danger">
-                    {% for error in form.status.errors %}
-                        <small>{{ error }}</small>
-                    {% endfor %}
-                </div>
+            <strong>Status: </strong>
+            {% if po_created and po_status %}
+                <span class="badge bg-{% if po_status == 'open' %}success{% elif po_status == 'closed' %}secondary{% else %}warning{% endif %}">
+                        {{ po_status|title }}
+                </span>
+            {% else %}
+                <span class="badge bg-secondary">Pending</span>
             {% endif %}
         </div>
+
 
         <br>
         <h5>Purchase Order Lines</h5>
@@ -93,13 +94,31 @@
                     {% for line in form.lines %}
                         <tr>
                             <td class="text-center">{{ line.item.data }}</td>
-                            <td>{{ line.part_number(class="form-control"), onchange="onePartNumberChange(" + loop.index0|string + ")" }}</td>
-                            <td>{{ line.description }}</td>
+                            <td>{{ line.part_number(class="form-control", onchange="onPartNumberChange(" + loop.index0|string + ")") }}</td>
+                            <td>
+                                <input type="text"
+                                       id="lines-{{ loop.index0 }}-description"
+                                       class="form-control"
+                                       readonly
+                                       value="{{ line.description.data if line.description and line.description.data else '' }}">
+                            </td>
                             <td>{{ line.quantity(class="form-control", onchange="calculateLineTotal(" + loop.index0|string + ")") }}</td>
                             <td>{{ line.req_date(class="form-control") }}</td>
-                            <td>{{ line.unit(class="form-control") }}</td>
-                            <td>{{ line.unit_price(class="form-control", onchange="calculateLineTotal(" + loop.index0|string + ")") }}</td>
-                            <td>{{ line.line_total(class="form-control line-total") }}</td>
+                            <td>
+                                <input type="text"
+                                       id="lines-{{ loop.index0 }}-unit"
+                                       class="form-control"
+                                       readonly
+                                       value="{{ line.unit.data if line.unit and line.unit.data else '' }}">
+                            </td>
+                            <td>
+                                <input type="text"
+                                       id="lines-{{ loop.index0 }}-unit_price"
+                                       class="form-control"
+                                       readonly
+                                       value="{{ line.unit_price.data if line.unit_price and line.unit_price.data else '' }}">
+                            </td>
+                            <td>{{ line.line_total(class="form-control line-total", readonly=true) }}</td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -172,17 +191,21 @@
         }
 
         function onPartNumberChange(lineIndex) {
-            const partNumber = document.getElementById(`#lines-${lineIndex}-part_number`);
+            console.log("Function called for line:", lineIndex);  // Debug
+            const partNumberValue = document.getElementById(`lines-${lineIndex}-part_number`).value;
 
-            if (partNumber){
-                fetch(`/lookup_part/${partNumber}`)
+            console.log("Part number entered:", partNumberValue);
+
+            if (partNumberValue){
+                fetch(`/lookup_part/${partNumberValue}`)
                     .then(response => response.json())
                     .then(data => {
+                        console.log("Data received:", data);
                         if (data.found){
-                            document.getElementById(`#lines-${lineIndex}-description`).value = data.description;
-                            document.getElementById(`#lines-${lineIndex}-unit_price`).value = data.unit_price;
-                            document.getElementById(`#lines-${lineIndex}-unit`).value = data.unit;
-                            document.getElementById(`#lines-${linIndex}-quantity`).value = data.minimun_qty;
+                            document.getElementById(`lines-${lineIndex}-description`).value = data.description;
+                            document.getElementById(`lines-${lineIndex}-unit_price`).value = data.unit_price;
+                            document.getElementById(`lines-${lineIndex}-unit`).value = data.unit;
+                            document.getElementById(`lines-${lineIndex}-quantity`).value = data.moq;
 
                             document.getElementById('supplier').value = data.supplier;
 
@@ -191,7 +214,6 @@
                             alert('Part not found in database!');
                         }
                     });
-
             }
         }
     </script>

@@ -1,6 +1,5 @@
 import datetime
 from calendar import *
-
 from flask import Flask, render_template, redirect, url_for, flash, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_bootstrap import Bootstrap5
@@ -79,9 +78,18 @@ def update_po_total(purchase_order):
     db.session.commit()
     return new_total
 
+
 @app.route('/')
 def home():
     all_po=db.session.execute(db.select(PurchaseOrder).order_by(PurchaseOrder.po_number)).scalars().all()
+
+    # parts = db.session.execute(db.select(PartDataBase)).scalars().all()
+    # print(f"Total parts in database: {len(parts)}")
+
+    # test_part = db.session.execute(
+    #     db.select(PartDataBase).where(PartDataBase.part_number == "RX-75")
+    # ).scalar()
+    # print(test_part)
     return render_template('index.html', all_po=all_po)
 
 @app.route('/add', methods=['GET','POST'])
@@ -96,6 +104,13 @@ def add():
         #filtrar lineas no vacias
         valid_lines = []
         grand_total = 0
+
+    if request.method == 'POST':
+        print("Form submitted!")
+        print("Form validation result:", form.validate())
+        print("Form errors:", form.errors)
+        if not form.validate():
+            flash("Form validation failed. Check the errors below.", "danger")
 
         for line in form.lines.entries:
             if line.item.data and line.quantity.data and line.req_date.data:
@@ -114,6 +129,7 @@ def add():
         next_id = db.session.execute(db.select(func.max(PurchaseOrder.id))).scalar()
         next_id = (next_id + 1) if next_id else 1
         po_number = f"PO-{next_id:04d}"
+        po_status = "open"
 
 
         po = PurchaseOrder(
@@ -121,7 +137,7 @@ def add():
             creation_date=form.creation_date.data,
             supplier=form.supplier.data,
             total_price=grand_total,
-            status=form.status.data,
+            status=po_status,
         )
         db.session.add(po)
         db.session.flush()
@@ -129,10 +145,12 @@ def add():
 
 
         for line_form in valid_lines:
-                part_record = db.session.execute(db.select(PartDataBase).where(PartDataBase.part_number == line_form.part_number)).scalar()
+                part_record = db.session.execute(db.select(PartDataBase).where(PartDataBase.part_number == line_form.part_number.data)).scalar()
+                print(part_record)
                 if not part_record:
                     flash(f"Part {line_form.part_number.data} does not exist", "error")
-                    #return error
+                    db.session.rollback()
+                    return render_template('/add.html', form=form, po_created=False)
 
                 final_qty = max(line_form.quantity.data, part_record.moq)
 
@@ -156,7 +174,8 @@ def add():
         return render_template('/add.html',
                                form=form,
                                po_number=po.po_number,
-                               po_created=True)
+                               po_created=True,
+                               po_status=po.status)
 
     # if request.method == 'POST':
     #     print("Form errors:", form.errors)
@@ -302,8 +321,9 @@ def import_csv():
 @app.route('/lookup_part/<string:part_number>')
 def lookup_part(part_number):
     part_record = db.session.execute(db.select(PartDataBase).where(PartDataBase.part_number == part_number)).scalar()
-
+    print(f"Found: {part_record}")
     if part_record:
+        print(f"Supplier: {part_record.supplier}")  # Debug line
         return jsonify({
             'found': True,
             'supplier': part_record.supplier,
@@ -311,9 +331,9 @@ def lookup_part(part_number):
             'unit_price': part_record.unit_price,
             'moq': part_record.moq,
             'unit': part_record.unit,
-            'price': part_record.price,
         })
     else:
+        print("Part not found!")  # Debug line
         return jsonify({'found': False})
 
 if __name__ == '__main__':
